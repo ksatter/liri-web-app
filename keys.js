@@ -10,6 +10,8 @@ module.exports = {
     spotifyKeys:  {
         id: '1279f038b6454101be058829e8022f57',
         secret: 'c938c64f9aec46d58cdd7a70478b834a'
-    }
+    },
+
+    omdbKey: '40e9cece'
 
 };

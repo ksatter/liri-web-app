@@ -14,7 +14,7 @@ switch(actionCall) {
         break;
 
     case 'movie-this':
-        console.log('OMDB');
+        getMovieData();
         break;
 
     case 'do-what-it-says':
@@ -50,7 +50,7 @@ function showTweets() {
 function getSongInfo() {
     // Get search term
     let query = searchTerm;
-    //Default serch term if blank
+    //Default search term if blank
     if (query.length === 0) {query = '"The Sign" Ace of Base'}
     //set up spotify client
     const spotify = require('node-spotify-api');
@@ -73,9 +73,40 @@ function getSongInfo() {
                 console.log(`Preview on Spotify: ${result.preview_url}`)
             } else {
                 // No results found
-                console.log(`I'm so sorry, spotify couldn't find any songs titled "${query}".`)
+                console.log(`I'm so sorry, Spotify couldn't find any songs titled "${query}".`)
             }
         } else {console.log(err)}
     })
+}
 
+function getMovieData() {
+    //get search term
+    let query = searchTerm.join('+');
+    //default search term if empty
+    if (query.length === 0) {query = 'mr+nobody'}
+    //set up OMDB search
+    const request = require('request');
+    const queryUrl = "http://www.omdbapi.com/?t=" + query + "&y=&plot=short&apikey=" + keys.omdbKey;
+    //fetch movie data
+    request(queryUrl, function (error, response, body) {
+
+        if (!error && response.statusCode === 200) {
+            let movie = JSON.parse(body);
+            //verify that result was returned
+            if (movie.Title) {
+                console.log(`Title: ${movie.Title}`);
+                console.log(`Release Year: ${movie.Year}`);
+                console.log(`IMDB Rating: ${movie.Ratings[0].Value}`);
+                console.log(`Rotten Tomatoes Rating: ${movie.Ratings[1].Value}`);
+                console.log(`Produced In: ${movie.Country}`);
+                console.log(`Language: ${movie.Language}`);
+                console.log(`Plot: ${movie.Plot}`);
+                console.log(`Starring: ${movie.Actors}`);
+            } else {
+                // No results found
+                console.log(`I'm so sorry, OMDB couldn't find any movies titled "${searchTerm.join(' ')}".`)
+            }
+        } else {console.log(err)}
+
+});
 }

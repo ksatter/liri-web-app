@@ -1,7 +1,7 @@
-var input = process.argv;
-var actionCall = input[2];
-var searchTerm = input.slice(3);
-var keys = require('./keys');
+const input = process.argv;
+const actionCall = input[2];
+const searchTerm = input.splice(3);
+const keys = require('./keys');
 
 switch(actionCall) {
 
@@ -10,7 +10,7 @@ switch(actionCall) {
         break;
 
     case 'spotify-this-song':
-        getSpotifyInfo();
+        getSongInfo();
         break;
 
     case 'movie-this':
@@ -27,19 +27,19 @@ switch(actionCall) {
 
 function showTweets() {
     //Set up twitter client
-    var twitter = require('twitter');
-    var twitterClient = new twitter(keys.twitterKeys);
-    var parameters = {
+    const twitter = require('twitter');
+    const twitterClient = new twitter(keys.twitterKeys);
+    const parameters = {
         screen_name: 'kathy_bootcamp',
         count: 20
     };
     //fetch tweets
-    twitterClient.get('statuses/user_timeline', parameters, function (error, list, response) {
+    twitterClient.get('statuses/user_timeline', parameters, function (error, list) {
 
         if(!error){
             //write tweets
-            for (var i = 0; i < list.length; i++) {
-                var currentText = list[i].text;
+            for (let i = 0; i < list.length; i++) {
+                let currentText = list[i].text;
                 console.log(currentText);
                 console.log(' ');
             }
@@ -47,29 +47,35 @@ function showTweets() {
     })
 }
 
-function getSpotifyInfo() {
-    var spotify = require('node-spotify-api');
-    var spotifyClient = new spotify(keys.spotifyKeys);
-
-    if (searchTerm.length === 0) {searchTerm = '"The Sign" Ace of Base'}
-
-    var parameters = {
+function getSongInfo() {
+    // Get search term
+    let query = searchTerm;
+    //Default serch term if blank
+    if (query.length === 0) {query = '"The Sign" Ace of Base'}
+    //set up spotify client
+    const spotify = require('node-spotify-api');
+    const spotifyClient = new spotify(keys.spotifyKeys);
+    const parameters = {
         type: 'track',
-        query: searchTerm,
+        query: query,
         limit: 1
     };
-
+    //fetch song info
     spotifyClient.search(parameters, function (err, data) {
         if (!err) {
-            var result = data.tracks.items[0];
-
-            console.log(`Artist: ${result.artists[0].name}`);
-            console.log(`Track: ${result.name}`);
-            console.log(`Album: ${result.album.name}`)
-            console.log(`Preview on Spotify: ${result.preview_url}`)
-
-
-        } else {console.log(err); console.log('error')}
+            //verify that a result was returned
+            if (data.tracks.items.length > 0) {
+                let result = data.tracks.items[0];
+                //write song info
+                console.log(`Artist: ${result.artists[0].name}`);
+                console.log(`Track: ${result.name}`);
+                console.log(`Album: ${result.album.name}`);
+                console.log(`Preview on Spotify: ${result.preview_url}`)
+            } else {
+                // No results found
+                console.log(`I'm so sorry, spotify couldn't find any songs titled "${query}".`)
+            }
+        } else {console.log(err)}
     })
 
 }

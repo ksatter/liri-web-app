@@ -1,28 +1,55 @@
-const input = process.argv;
-const actionCall = input[2];
-const searchTerm = input.splice(3);
+// Get Keys
 const keys = require('./keys');
+// Set up logger
+const log4js = require('log4js');
+//format text
+const dedent = require('dedent-js');
+log4js.configure({
+    appenders: {
+        everything: { type: 'file', filename: 'log.txt' }
+    },
+    categories: {
+        default: { appenders: [ 'everything' ], level: 'debug' }
+    }
+});
+const logger = log4js.getLogger();
+function writeToLogs(dataToLog) {
+    console.log(dedent(dataToLog));
+    logger.info(dedent(dataToLog));
+}
+//Parse input
+let input = process.argv;
+let actionCall = input[2];
+let searchTerm = input.splice(3);
 
-switch(actionCall) {
 
-    case 'my-tweets':
-        showTweets();
-        break;
+doWhat();
 
-    case 'spotify-this-song':
-        getSongInfo();
-        break;
 
-    case 'movie-this':
-        getMovieData();
-        break;
+function doWhat() {
 
-    case 'do-what-it-says':
-        console.log('Spotify');
-        break;
+    switch(actionCall) {
 
-    default:
-        console.log('error');
+        case 'my-tweets':
+            showTweets();
+            break;
+
+        case 'spotify-this-song':
+            getSongInfo();
+            break;
+
+        case 'movie-this':
+            getMovieData();
+            break;
+
+        case 'do-what-it-says':
+            getCommandFromFile();
+            break;
+
+        default:
+            console.log('error');
+    }
+
 }
 
 function showTweets() {
@@ -48,16 +75,14 @@ function showTweets() {
 }
 
 function getSongInfo() {
-    // Get search term
-    let query = searchTerm;
     //Default search term if blank
-    if (query.length === 0) {query = '"The Sign" Ace of Base'}
+    if (searchTerm.length === 0) {searchTerm = '"The Sign" Ace of Base'}
     //set up spotify client
     const spotify = require('node-spotify-api');
     const spotifyClient = new spotify(keys.spotifyKeys);
     const parameters = {
         type: 'track',
-        query: query,
+        query: searchTerm,
         limit: 1
     };
     //fetch song info
@@ -67,10 +92,12 @@ function getSongInfo() {
             if (data.tracks.items.length > 0) {
                 let result = data.tracks.items[0];
                 //write song info
-                console.log(`Artist: ${result.artists[0].name}`);
-                console.log(`Track: ${result.name}`);
-                console.log(`Album: ${result.album.name}`);
-                console.log(`Preview on Spotify: ${result.preview_url}`)
+                writeToLogs(`
+                    Artist: ${result.artists[0].name}
+                    Track: ${result.name}
+                    Album: ${result.album.name}
+                    Preview on Spotify: ${result.preview_url}
+                `);
             } else {
                 // No results found
                 console.log(`I'm so sorry, Spotify couldn't find any songs titled "${query}".`)
@@ -81,27 +108,28 @@ function getSongInfo() {
 
 function getMovieData() {
     //get search term
-    let query = searchTerm.join('+');
+    searchTerm = searchTerm.join('+');
     //default search term if empty
-    if (query.length === 0) {query = 'mr+nobody'}
+    if (searchTerm.length === 0) {searchTerm = 'mr+nobody'}
     //set up OMDB search
     const request = require('request');
-    const queryUrl = "http://www.omdbapi.com/?t=" + query + "&y=&plot=short&apikey=" + keys.omdbKey;
+    const queryUrl = "http://www.omdbapi.com/?t=" + searchTerm + "&y=&plot=short&apikey=" + keys.omdbKey;
     //fetch movie data
     request(queryUrl, function (error, response, body) {
-
         if (!error && response.statusCode === 200) {
             let movie = JSON.parse(body);
             //verify that result was returned
             if (movie.Title) {
-                console.log(`Title: ${movie.Title}`);
-                console.log(`Release Year: ${movie.Year}`);
-                console.log(`IMDB Rating: ${movie.Ratings[0].Value}`);
-                console.log(`Rotten Tomatoes Rating: ${movie.Ratings[1].Value}`);
-                console.log(`Produced In: ${movie.Country}`);
-                console.log(`Language: ${movie.Language}`);
-                console.log(`Plot: ${movie.Plot}`);
-                console.log(`Starring: ${movie.Actors}`);
+                writeToLogs(`\n
+                    Title: ${movie.Title} 
+                    Release Year: ${movie.Year} 
+                    IMDB Rating: ${movie.Ratings[0].Value} 
+                    Rotten Tomatoes Rating: ${movie.Ratings[1].Value} 
+                    Produced In: ${movie.Country} 
+                    Language: ${movie.Language} 
+                    Plot: ${movie.Plot} 
+                    Starring: ${movie.Actors}
+                    \n`)
             } else {
                 // No results found
                 console.log(`I'm so sorry, OMDB couldn't find any movies titled "${searchTerm.join(' ')}".`)
@@ -110,3 +138,7 @@ function getMovieData() {
 
 });
 }
+
+
+
+

@@ -1,9 +1,9 @@
+
 // Get Keys
 const keys = require('./keys');
 // Set up logger
 const log4js = require('log4js');
-//format text
-const dedent = require('dedent-js');
+const logger = log4js.getLogger();
 log4js.configure({
     appenders: {
         everything: { type: 'file', filename: 'log.txt' }
@@ -12,22 +12,25 @@ log4js.configure({
         default: { appenders: [ 'everything' ], level: 'debug' }
     }
 });
-const logger = log4js.getLogger();
-function writeToLogs(dataToLog) {
-    console.log(dedent(dataToLog));
-    logger.info(dedent(dataToLog));
-}
+
+//format text
+const dedent = require('dedent-js');
+const removePunctuation = require('remove-punctuation');
+
 //Parse input
 let input = process.argv;
-let actionCall = input[2];
+let actionCall = input[2].toLowerCase();
 let searchTerm = input.splice(3);
-
+searchTerm = searchTerm.join(" ");
+searchTerm = removePunctuation(searchTerm);
 
 doWhat();
 
 
 function doWhat() {
-
+    //log inputs
+    logger.info(`${actionCall} ${searchTerm.toString(" ")}`);
+    //choose which function to call
     switch(actionCall) {
 
         case 'my-tweets':
@@ -47,7 +50,14 @@ function doWhat() {
             break;
 
         default:
-            console.log('error');
+            writeToLogs(`
+                I'm so sorry, I didn't understand that! 
+                Try:
+                "my-tweets" to view Kathy's last 20 tweets,;
+                "spotify-this-song [Song Name]" to get info about a song;
+                "movie-this [Movie Name]" to get info about a movie;
+                "do-what-it-says" to see what Kathy thinks you should
+            `);
     }
 
 }
@@ -65,12 +75,16 @@ function showTweets() {
 
         if(!error){
             //write tweets
+            const tweetList = [];
+
             for (let i = 0; i < list.length; i++) {
                 let currentText = list[i].text;
-                console.log(currentText);
-                console.log(' ');
+                tweetList.push(currentText)
             }
-        } else {console.log(error)}
+            writeToLogs(`
+                ${tweetList.join('\n')}
+                `)
+        } else {writeToLogs(error)}
     })
 }
 
@@ -100,20 +114,24 @@ function getSongInfo() {
                 `);
             } else {
                 // No results found
-                console.log(`I'm so sorry, Spotify couldn't find any songs titled "${query}".`)
+                writeToLogs(`I'm so sorry, Spotify couldn't find any songs titled "${query}".`);
             }
-        } else {console.log(err)}
+        } else {writeToLogs(err)}
     })
 }
 
 function getMovieData() {
-    //get search term
+    //get formatted search term
+    searchTerm = searchTerm.split(" ");
     searchTerm = searchTerm.join('+');
     //default search term if empty
-    if (searchTerm.length === 0) {searchTerm = 'mr+nobody'}
+    if (searchTerm.length === 0) {
+        searchTerm = 'mr+nobody'
+    }
     //set up OMDB search
     const request = require('request');
     const queryUrl = "http://www.omdbapi.com/?t=" + searchTerm + "&y=&plot=short&apikey=" + keys.omdbKey;
+    console.log(queryUrl);
     //fetch movie data
     request(queryUrl, function (error, response, body) {
         if (!error && response.statusCode === 200) {
@@ -132,12 +150,33 @@ function getMovieData() {
                     \n`)
             } else {
                 // No results found
-                console.log(`I'm so sorry, OMDB couldn't find any movies titled "${searchTerm.join(' ')}".`)
+                writeToLogs(`I'm so sorry, OMDB couldn't find any movies titled "${searchTerm}".`)
             }
-        } else {console.log(err)}
-
-});
+        } else {
+            writeToLogs(err)
+        }
+    });
 }
+
+function getCommandFromFile() {
+    const fs = require('fs');
+    fs.readFile('random.txt', 'utf8', function (error, data) {
+        if (!error) {
+            input = data.split(",");
+            actionCall = input[0];
+            searchTerm = input[1].split(",");
+            doWhat()
+        } else {writeToLogs(error)}
+    })
+}
+
+function writeToLogs(dataToLog) {
+
+    console.log(dedent(dataToLog));
+    logger.info(dedent(dataToLog));
+
+}
+
 
 
 

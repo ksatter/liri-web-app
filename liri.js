@@ -1,35 +1,28 @@
-
+//Accces files
+const fs = require('fs');
 // Get Keys
 const keys = require('./keys');
-// Set up logger
-const log4js = require('log4js');
-const logger = log4js.getLogger();
-log4js.configure({
-    appenders: {
-        everything: { type: 'file', filename: 'log.txt' }
-    },
-    categories: {
-        default: { appenders: [ 'everything' ], level: 'debug' }
-    }
-});
-
-//format text
-const dedent = require('dedent-js');
+// Module to remove puntuation from search
 const removePunctuation = require('remove-punctuation');
+//module to remove indentation
+const dedent = require('dedent-js');
 
 //Parse input
 let input = process.argv;
+//Get action call
 let actionCall = input[2].toLowerCase();
+//get search term as string with punctuation removed
 let searchTerm = input.splice(3);
 searchTerm = searchTerm.join(" ");
 searchTerm = removePunctuation(searchTerm);
 
-doWhat();
-
-
+// Determine what command was entered and run appropriate function
 function doWhat() {
-    //log inputs
-    logger.info(`${actionCall} ${searchTerm.toString(" ")}`);
+    //write input to log for debugging
+    log(`**********************
+        Timestamp: ${new Date().toLocaleString('en-US')} 
+        Command: ${actionCall} ${searchTerm}
+        **********************`);
     //choose which function to call
     switch(actionCall) {
 
@@ -62,6 +55,7 @@ function doWhat() {
 
 }
 
+
 function showTweets() {
     //Set up twitter client
     const twitter = require('twitter');
@@ -71,19 +65,24 @@ function showTweets() {
         count: 20
     };
     //fetch tweets
-    twitterClient.get('statuses/user_timeline', parameters, function (error, list) {
+    twitterClient.get('statuses/user_timeline', parameters, function (error, tweets) {
+        writeToLogs(`
+        ====================
+        `);
 
         if(!error){
             //write tweets
-            const tweetList = [];
-
-            for (let i = 0; i < list.length; i++) {
-                let currentText = list[i].text;
-                tweetList.push(currentText)
-            }
-            writeToLogs(`
-                ${tweetList.join('\n')}
+            for (let i = 0; i < tweets.length; i++) {
+                writeToLogs(`
+                
+                ${tweets[i].created_at}
+                
+                ${tweets[i].text}
+                
+                ====================
                 `)
+            }
+
         } else {writeToLogs(error)}
     })
 }
@@ -105,12 +104,17 @@ function getSongInfo() {
             //verify that a result was returned
             if (data.tracks.items.length > 0) {
                 let result = data.tracks.items[0];
+                //console.log(result);
                 //write song info
                 writeToLogs(`
+                    ====================
+                    
                     Artist: ${result.artists[0].name}
                     Track: ${result.name}
                     Album: ${result.album.name}
                     Preview on Spotify: ${result.preview_url}
+                    
+                    ====================
                 `);
             } else {
                 // No results found
@@ -121,9 +125,8 @@ function getSongInfo() {
 }
 
 function getMovieData() {
-    //get formatted search term
-    searchTerm = searchTerm.split(" ");
-    searchTerm = searchTerm.join('+');
+    //replace spaces with +'s
+    searchTerm = searchTerm.split(" ").join('+');
     //default search term if empty
     if (searchTerm.length === 0) {
         searchTerm = 'mr+nobody'
@@ -138,8 +141,10 @@ function getMovieData() {
             let movie = JSON.parse(body);
             //verify that result was returned
             if (movie.Title) {
-                writeToLogs(`\n
-                    Title: ${movie.Title} 
+                writeToLogs(`
+                    ====================
+                    
+                    Title: ${movie.Title}
                     Release Year: ${movie.Year} 
                     IMDB Rating: ${movie.Ratings[0].Value} 
                     Rotten Tomatoes Rating: ${movie.Ratings[1].Value} 
@@ -147,37 +152,40 @@ function getMovieData() {
                     Language: ${movie.Language} 
                     Plot: ${movie.Plot} 
                     Starring: ${movie.Actors}
-                    \n`)
+                    
+                    ====================
+                    `)
             } else {
                 // No results found
                 writeToLogs(`I'm so sorry, OMDB couldn't find any movies titled "${searchTerm}".`)
             }
         } else {
-            writeToLogs(err)
+            writeToLogs(error)
         }
     });
 }
 
 function getCommandFromFile() {
-    const fs = require('fs');
     fs.readFile('random.txt', 'utf8', function (error, data) {
         if (!error) {
             input = data.split(",");
             actionCall = input[0];
-            searchTerm = input[1].split(",");
+            searchTerm = input[1];
             doWhat()
-        } else {writeToLogs(error)}
+        } else {writeToLogs(error)}input.splice(3);
     })
 }
 
+
 function writeToLogs(dataToLog) {
-
-    console.log(dedent(dataToLog));
-    logger.info(dedent(dataToLog));
-
+   log(dedent(dataToLog));
+   console.log(dedent(dataToLog));
 }
 
+function log(dataToLog) {
+    fs.appendFile('log.txt', '\n' + dedent(dataToLog) + '\n', function (error) {
+        if(error) console.log(error);
+    })
+}
 
-
-
-
+doWhat();

@@ -150,8 +150,9 @@ function getMovieData() {
                     Rotten Tomatoes Rating: ${movie.Ratings[1].Value} 
                     Produced In: ${movie.Country} 
                     Language: ${movie.Language} 
-                    Plot: ${movie.Plot} 
                     Starring: ${movie.Actors}
+                    
+                    Plot: ${movie.Plot} 
                     
                     ====================
                     `)

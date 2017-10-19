@@ -125,43 +125,40 @@ function getSongInfo() {
 }
 
 function getMovieData() {
-    //replace spaces with +'s
-    searchTerm = searchTerm.split(" ").join('+');
+    //get formatted search term
+    searchTerm = searchTerm.split(" ");
+    searchTerm = searchTerm.join('+');
     //default search term if empty
     if (searchTerm.length === 0) {
         searchTerm = 'mr+nobody'
     }
     //set up OMDB search
     const request = require('request');
-    const queryUrl = "http://www.omdbapi.com/?t=" + searchTerm + "&y=&plot=short&apikey=" + keys.omdbKey;
+    const queryUrl = "http://www.omdbapi.com/?t=" + searchTerm + "&y=&plot=short&tomatoes=true&apikey=" + keys.omdbKey;
     console.log(queryUrl);
     //fetch movie data
     request(queryUrl, function (error, response, body) {
         if (!error && response.statusCode === 200) {
             let movie = JSON.parse(body);
+            console.log(movie);
             //verify that result was returned
             if (movie.Title) {
-                writeToLogs(`
-                    ====================
-                    
-                    Title: ${movie.Title}
+                writeToLogs(`\n
+                    Title: ${movie.Title} 
                     Release Year: ${movie.Year} 
                     IMDB Rating: ${movie.Ratings[0].Value} 
                     Rotten Tomatoes Rating: ${movie.Ratings[1].Value} 
                     Produced In: ${movie.Country} 
                     Language: ${movie.Language} 
-                    Starring: ${movie.Actors}
-                    
                     Plot: ${movie.Plot} 
-                    
-                    ====================
-                    `)
+                    Starring: ${movie.Actors}
+                    \n`)
             } else {
                 // No results found
                 writeToLogs(`I'm so sorry, OMDB couldn't find any movies titled "${searchTerm}".`)
             }
         } else {
-            writeToLogs(error)
+            writeToLogs(err)
         }
     });
 }
